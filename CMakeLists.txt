@@ -32,11 +32,9 @@ if (MSVC)
     # /MP : enable multi-process build with MSBuild (it should be on by default but CMake generates the project files without the right params).
     # /external:I $ENV{CONDA_PREFIX}: consider the conda env prefix libraries headers as "external" to this project.
     # /utf-8 : enable utf-8 source and execution environment (without having to set the code page to 65001)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D_CRT_SECURE_NO_WARNINGS /DNOMINMAX /EHsc /Zc:__cplusplus /MP /experimental:external /external:I $ENV{CONDA_PREFIX}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D_CRT_SECURE_NO_WARNINGS /DNOMINMAX /EHsc /Zc:__cplusplus /MP /experimental:external /external:I $ENV{CONDA_PREFIX} /utf-8")
     # Force release mode to avoid debug libraries to be linked
     set(CMAKE_BUILD_TYPE Release)
-    add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
-    add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
     # add_definitions("-DUNICODE -D_UNICODE")
 endif()
 
