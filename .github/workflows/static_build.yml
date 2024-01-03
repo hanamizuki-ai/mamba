@@ -1,4 +1,4 @@
-name: Micromamba static builds
+name: Micromamba
 
 on:
   push:
@@ -12,6 +12,8 @@ on:
       - 'mamba/**'
       - 'libmambapy/**'
       - '**.md'
+  merge_group:
+    types: [checks_requested]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -19,7 +21,7 @@ concurrency:
 
 jobs:
   micromamba-static-unix:
-    name: "micromamba - ${{ matrix.platform }}-${{ matrix.arch }}"
+    name: "${{ matrix.platform }}-${{ matrix.arch }}"
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -37,14 +39,19 @@ jobs:
           # Running a fork until we can merge the changes in micromamba-feedstock
           # https://github.com/conda-forge/micromamba-feedstock/pull/154
           repository: AntoinePrv/micromamba-feedstock
-          ref: tmp-mamba-ci
           path: micromamba-feedstock
-      - name: Clear micromamba-feedstock git directory
-        run: rm -rf "micromamba-feedstock/.git"
       - name: Checkout mamba branch
         uses: actions/checkout@v3
         with:
-          path: micromamba-feedstock/source
+          path: mamba
+      - name: Clear mamba git directory and link source
+        # `source` subfolder is the special location looked-up by our feedstock.
+        # Due to Docker, we can only put it as a subfolder of `micromamba-feedstock`,
+        run: |
+          rm -rf "mamba/.git"
+          mv mamba/ micromamba-feedstock/source
+          # Prevent irrelevant file permission error
+          git -C micromamba-feedstock/ config --local --add safe.directory '*'
       - uses: mamba-org/setup-micromamba@v1
         with:
           environment-name: mambabuild
@@ -75,6 +82,8 @@ jobs:
             apt-get install -y python3 docker.io
           run: |
             cd micromamba-feedstock/
+            # Prevent irrelevant file permission error
+            chown -R $(whoami) .
             # Special values for running the feedstock with a local source
             export FEEDSTOCK_ROOT="${PWD}"
             export CI="local"
@@ -104,7 +113,7 @@ jobs:
           path: ${{ github.workspace }}/artifacts/micromamba
 
   micromamba-static-win:
-    name: "micromamba - win-64"
+    name: "win-64"
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v3
@@ -134,10 +143,12 @@ jobs:
             cli11>=2.2,<3
             cpp-expected
             nlohmann_json
+            simdjson-static>=3.3.0
             spdlog
             fmt
             yaml-cpp-static>=0.8.0
             libsolv-static>=0.7.24
+            reproc-cpp-static>=14.2.4.post0
       - name: build micromamba
         shell: cmd /C call {0}
         run: |
